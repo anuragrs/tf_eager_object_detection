@@ -54,8 +54,8 @@ def generate_by_anchor_base_tf(anchor_base, feat_stride, height, width):
     K = tf.multiply(width, height)
     A = anchor_base.shape[0]
     shifts = tf.transpose(tf.reshape(shifts, shape=[1, K, 4]), perm=(1, 0, 2))
-    anchor_constant = tf.to_float(tf.reshape(anchor_base, (1, A, 4)))
-    anchors_tf = tf.reshape(tf.add(anchor_constant, tf.to_float(shifts)), shape=(-1, 4))
+    anchor_constant = tf.compat.v1.to_float(tf.reshape(anchor_base, (1, A, 4)))
+    anchors_tf = tf.reshape(tf.add(anchor_constant, tf.compat.v1.to_float(shifts)), shape=(-1, 4))
 
     return tf.cast(anchors_tf, dtype=tf.float32)
 
@@ -137,7 +137,7 @@ def _scale_enum(anchor, scales):
 def make_anchors(base_anchor_size, anchor_scales, anchor_ratios,
                  featuremap_height, featuremap_width,
                  stride, name='make_anchors'):
-    with tf.variable_scope(name):
+    with tf.compat.v1.variable_scope(name):
         base_anchor = tf.constant([0, 0, base_anchor_size, base_anchor_size], tf.float32)  # [x_center, y_center, w, h]
 
         ws, hs = enum_ratios(enum_scales(base_anchor, anchor_scales),

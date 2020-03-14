@@ -43,8 +43,8 @@ def pairwise_iou(boxlist1, boxlist2):
     Returns:
       a tensor with shape [N, M] representing pairwise iou scores.
     """
-    boxlist1 = tf.to_float(boxlist1)
-    boxlist2 = tf.to_float(boxlist2)
+    boxlist1 = tf.compat.v1.to_float(boxlist1)
+    boxlist2 = tf.compat.v1.to_float(boxlist2)
 
     intersections = pairwise_intersection(boxlist1, boxlist2)
     areas1 = area(boxlist1)
@@ -68,18 +68,18 @@ def bboxes_clip_filter(rpn_proposals, min_value, max_height, max_width, min_edge
     :return:
     """
     channels = tf.split(rpn_proposals, 4, axis=1)
-    channels[0] = tf.maximum(tf.minimum(channels[0], max_width - 1), min_value)
-    channels[1] = tf.maximum(tf.minimum(channels[1], max_height - 1), min_value)
-    channels[2] = tf.maximum(tf.minimum(channels[2], max_width - 1), min_value)
-    channels[3] = tf.maximum(tf.minimum(channels[3], max_height - 1), min_value)
+    channels[0] = tf.maximum(tf.minimum(channels[0], tf.cast(max_width - 1, tf.float32)), min_value)
+    channels[1] = tf.maximum(tf.minimum(channels[1], tf.cast(max_height - 1, tf.float32)), min_value)
+    channels[2] = tf.maximum(tf.minimum(channels[2], tf.cast(max_width - 1, tf.float32)), min_value)
+    channels[3] = tf.maximum(tf.minimum(channels[3], tf.cast(max_height - 1, tf.float32)), min_value)
     rpn_proposals = tf.concat(channels, axis=1)
 
     if min_edge is None:
         return rpn_proposals, tf.range(rpn_proposals.shape[0])
 
-    min_edge = tf.to_float(min_edge)
-    y_len = tf.to_float(channels[2] - channels[0] + 1.0)
-    x_len = tf.to_float(channels[3] - channels[1] + 1.0)
+    min_edge = tf.compat.v1.to_float(min_edge)
+    y_len = tf.compat.v1.to_float(channels[2] - channels[0] + 1.0)
+    x_len = tf.compat.v1.to_float(channels[3] - channels[1] + 1.0)
     rpn_proposals_idx = tf.where(tf.logical_and(x_len >= min_edge, y_len >= min_edge))[:, 0]
     return tf.gather(rpn_proposals, rpn_proposals_idx), rpn_proposals_idx
 
@@ -92,10 +92,18 @@ def bboxes_range_filter(anchors, max_height, max_width):
     :param max_width:
     :return:
     """
+    # index_inside = tf.where(
+    #     tf.logical_and(
+    #         tf.logical_and((anchors[:, 0] >= 0), (anchors[:, 1] >= 0)),
+    #         tf.logical_and((anchors[:, 2] <= max_width - 1), (anchors[:, 3] <= max_height - 1)),
+    #     )
+    # )[:, 0]
     index_inside = tf.where(
         tf.logical_and(
-            tf.logical_and((anchors[:, 0] >= 0), (anchors[:, 1] >= 0)),
-            tf.logical_and((anchors[:, 2] <= max_width - 1), (anchors[:, 3] <= max_height - 1)),
+            tf.logical_and(tf.greater_equal(anchors[:, 0], 0.0), 
+                           tf.greater_equal(anchors[:, 1], 0.0)),
+            tf.logical_and(tf.less_equal(anchors[:, 2], tf.cast(max_width - 1, tf.float32)),
+                           tf.less_equal(anchors[:, 3], tf.cast(max_height - 1, tf.float32))),
         )
     )[:, 0]
     return index_inside

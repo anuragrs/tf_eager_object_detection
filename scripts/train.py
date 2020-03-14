@@ -8,8 +8,8 @@ from object_detection.model.model_factory import model_factory
 from object_detection.config.config_factory import config_factory
 from object_detection.utils.visual_utils import show_one_image
 from object_detection.dataset.dataset_factory import dataset_factory
-from tensorflow.contrib.summary import summary
-from tensorflow.contrib.eager.python import saver as eager_saver
+from tensorflow import summary
+# from tensorflow.contrib.eager.python import saver as eager_saver
 from tensorflow.python.platform import tf_logging
 from tqdm import tqdm
 
@@ -37,17 +37,17 @@ def train_step(model, loss, tape, optimizer):
         gradients = all_grads
 
     optimizer.apply_gradients(zip(gradients, all_vars),
-                              global_step=tf.train.get_or_create_global_step())
+                              global_step=tf.compat.v1.train.get_or_create_global_step())
 
 
 def _get_default_optimizer(use_adam):
-    lr = tf.train.piecewise_constant(tf.train.get_or_create_global_step(),
+    lr = tf.compat.v1.train.piecewise_constant(tf.compat.v1.train.get_or_create_global_step(),
                                      boundaries=CONFIG['learning_rate_multi_decay_steps'],
                                      values=CONFIG['learning_rate_multi_lrs'])
     if use_adam:
-        return tf.train.AdamOptimizer(lr)
+        return tf.compat.v1.train.AdamOptimizer(lr)
     else:
-        return tf.train.MomentumOptimizer(lr, momentum=CONFIG['optimizer_momentum'])
+        return tf.compat.v1.train.MomentumOptimizer(lr, momentum=CONFIG['optimizer_momentum'])
 
 
 def _get_training_dataset(preprocessing_type='caffe', dataset_type='pascal',
@@ -78,7 +78,9 @@ def train_one_epoch(dataset, base_model, optimizer,
                     preprocessing_type,
                     logging_every_n_steps,
                     summary_every_n_steps,
-                    saver, save_every_n_steps, save_path):
+                    epoch,
+                    save_every_n_steps, save_path):
+                    #saver, save_every_n_steps, save_path):
     idx = 0
 
     for image, gt_bboxes, gt_labels in tqdm(dataset):
@@ -93,7 +95,7 @@ def train_one_epoch(dataset, base_model, optimizer,
         ], axis=1)
 
         # set labels to int32
-        gt_labels = tf.to_int32(tf.squeeze(gt_labels, axis=0))
+        gt_labels = tf.compat.v1.to_int32(tf.squeeze(gt_labels, axis=0))
 
         # train one step
         with tf.GradientTape() as tape:
@@ -104,12 +106,13 @@ def train_one_epoch(dataset, base_model, optimizer,
 
         # summary
         if idx % summary_every_n_steps == 0:
-            summary.scalar("l2_loss", l2_loss)
-            summary.scalar("rpn_cls_loss", rpn_cls_loss)
-            summary.scalar("rpn_reg_loss", rpn_reg_loss)
-            summary.scalar("roi_cls_loss", roi_cls_loss)
-            summary.scalar("roi_reg_loss", roi_reg_loss)
-            summary.scalar("total_loss", total_loss)
+            curr_step = epoch * 120000 + idx # hardcoded for COCO - roughly
+            summary.scalar("l2_loss", l2_loss, step=curr_step)
+            summary.scalar("rpn_cls_loss", rpn_cls_loss, step=curr_step)
+            summary.scalar("rpn_reg_loss", rpn_reg_loss, step=curr_step)
+            summary.scalar("roi_cls_loss", roi_cls_loss, step=curr_step)
+            summary.scalar("roi_reg_loss", roi_reg_loss, step=curr_step)
+            summary.scalar("total_loss", total_loss, step=curr_step)
 
             pred_bboxes, pred_labels, pred_scores = base_model(image, False)
 
@@ -124,7 +127,7 @@ def train_one_epoch(dataset, base_model, optimizer,
                                               preprocessing_type=preprocessing_type,
                                               caffe_pixel_means=CONFIG['bgr_pixel_means'],
                                               enable_matplotlib=False)
-                    tf.contrib.summary.image("gt_image", tf.expand_dims(gt_image, axis=0))
+                    tf.summary.image("gt_image", tf.expand_dims(gt_image, axis=0))
 
                     # show pred
                     pred_bboxes = tf.gather(pred_bboxes, selected_idx)
@@ -139,11 +142,11 @@ def train_one_epoch(dataset, base_model, optimizer,
                                                 preprocessing_type=preprocessing_type,
                                                 caffe_pixel_means=CONFIG['bgr_pixel_means'],
                                                 enable_matplotlib=False)
-                    tf.contrib.summary.image("pred_image", tf.expand_dims(pred_image, axis=0))
+                    tf.summary.image("pred_image", tf.expand_dims(pred_image, axis=0))
 
         # logging
         if idx % logging_every_n_steps == 0:
-            if isinstance(optimizer, tf.train.AdamOptimizer):
+            if isinstance(optimizer, tf.optimizers.Adam):
                 show_lr = optimizer._lr()
             else:
                 show_lr = optimizer._learning_rate()
@@ -153,8 +156,10 @@ def train_one_epoch(dataset, base_model, optimizer,
                                               l2_loss, total_loss))
 
         # saving
-        if saver is not None and save_path is not None and idx % save_every_n_steps == 0 and idx != 0:
-            saver.save(os.path.join(save_path, 'model.ckpt'), global_step=tf.train.get_or_create_global_step())
+        # if saver is not None and save_path is not None and idx % save_every_n_steps == 0 and idx != 0:
+        #     saver.save(os.path.join(save_path, 'model.ckpt'), global_step=tf.compat.v1.train.get_or_create_global_step())
+        if save_path is not None and idx % save_every_n_steps == 0 and idx != 0:
+            base_model.save_weights(os.path.join(save_path, 'model.ckpt'))
 
         idx += 1
 
@@ -175,29 +180,32 @@ def train(training_dataset,
           restore_ckpt_file_path,
           ):
     # 获取 pretrained model
-    variables = base_model.variables + [tf.train.get_or_create_global_step()]
-    saver = eager_saver.Saver(variables)
+    variables = base_model.variables #+ [tf.compat.v1.train.get_or_create_global_step()]
+    #saver = eager_saver.Saver(variables)
 
     # 命令行指定 ckpt file
     if restore_ckpt_file_path is not None:
-        saver.restore(restore_ckpt_file_path)
+        #saver.restore(restore_ckpt_file_path)
+        base_model.load_weights(restore_ckpt_file_path, by_name=True)
 
     # 当前 logs_dir 中的预训练模型，用于继续训练
-    if tf.train.latest_checkpoint(ckpt_dir) is not None:
-        saver.restore(tf.train.latest_checkpoint(ckpt_dir))
+    #if tf.train.latest_checkpoint(ckpt_dir) is not None:
+        #saver.restore(tf.train.latest_checkpoint(ckpt_dir))
 
-    train_writer = tf.contrib.summary.create_file_writer(train_dir, flush_millis=100000)
+    train_writer = tf.summary.create_file_writer(train_dir, flush_millis=100000)
     for i in range(CONFIG['epochs']):
         tf_logging.info('epoch %d starting...' % (i + 1))
         start = time.time()
-        with train_writer.as_default(), summary.always_record_summaries():
+        with train_writer.as_default(): # always_record_summaries():
             train_one_epoch(dataset=training_dataset, base_model=base_model,
                             optimizer=optimizer, preprocessing_type=preprocessing_type,
                             logging_every_n_steps=logging_every_n_steps,
                             summary_every_n_steps=summary_every_n_steps,
-                            saver=saver, save_every_n_steps=save_every_n_steps, save_path=ckpt_dir,
+                            epoch=i,
+                            #saver=saver, save_every_n_steps=save_every_n_steps, save_path=ckpt_dir,
+                            save_every_n_steps=save_every_n_steps, save_path=ckpt_dir,
                             )
-        tf.set_random_seed(1)
+        tf.random.set_seed(1)
         train_end = time.time()
         tf_logging.info('epoch %d training finished, costing %d seconds...' % (i + 1, train_end - start))
 
@@ -214,7 +222,7 @@ def parse_args():
     parser.add_argument('--backbone', type=str, default='resnet50',
                         help='one of [vgg16, resnet50, resnet101, resnet152]')
 
-    parser.add_argument('--data_type', default="pascal", type=str, help='pascal or coco')
+    parser.add_argument('--data_type', default="coco", type=str, help='pascal or coco')
 
     # coco
     parser.add_argument('--coco_year', default="2017", type=str, help='one of [2014, 2017]')
@@ -237,9 +245,9 @@ def parse_args():
     # parser.add_argument('--data_root_path', default="/ssd/zhangyiyang/COCO2017", type=str)
     parser.add_argument('--data_root_path', type=str,
                         help='path to tfrecord files if pascal, path to coco root if coco',
-                        default="/ssd/zhangyiyang/tf_eager_object_detection/VOCdevkit/tf_eager_records")
+                        default="/Users/mzanur/data/COCO")
     parser.add_argument('--logs_dir', type=str, help='path to save ckpt files and tensorboard summaries.',
-                        default="/ssd/zhangyiyang/tf_eager_object_detection/logs")
+                        default="/Users/mzanur/workspace/tf_eager_object_detection/logs")
 
     # # parser.add_argument('--data_root_path', default="D:\\data\\COCO2017", type=str)
     # parser.add_argument('--data_root_path', default="D:\\data\\VOCdevkit\\tf_eager_records\\", type=str)
@@ -255,15 +263,15 @@ def main(args):
 
     # tensorflow eager 模式基本参数设置
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
-    config = tf.ConfigProto(allow_soft_placement=True)
+    config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
     config.gpu_options.allow_growth = True
     # config.log_device_placement = True
-    tf.enable_eager_execution(config=config)
+    # tf.enable_eager_execution(config=config)
 
     # 建立模型，并初始化
     cur_model = model_factory(args.model_type, args.backbone, CONFIG)
     preprocessing_type = 'caffe'
-    cur_model(tf.to_float(np.random.rand(1, 800, 600, 3)), False)
+    cur_model(tf.compat.v1.to_float(np.random.rand(1, 800, 600, 3)), False)
 
     # logs基本信息
     # logs-{data_type}-{model_type}-{backbone}-{logs_name}

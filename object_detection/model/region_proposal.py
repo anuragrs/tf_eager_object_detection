@@ -71,7 +71,7 @@ class RegionProposal(tf.keras.Model):
         # 4. 进行nms。
         # 5. 根据rpn_score排序，获取num_post_nms个anchors作为proposal结果。
         num_post_nms = self._num_post_nms_train if training else self._num_post_nms_test
-        selected_idx = tf.image.non_max_suppression(tf.to_float(decoded_bboxes), scores,
+        selected_idx = tf.image.non_max_suppression(tf.compat.v1.to_float(decoded_bboxes), scores,
                                                     max_output_size=num_post_nms,
                                                     iou_threshold=self._nms_iou_threshold)
 

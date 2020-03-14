@@ -128,7 +128,7 @@ def get_resnet_model(stack_fn,
                                                cache_subdir='models',
                                                file_hash=file_hash)
         model.load_weights(weights_path, by_name=True)
-        tf.logging.info('successfully load keras pre-trained weights for {} extractor'.format(model_name))
+        tf.compat.v1.logging.info('successfully load keras pre-trained weights for {} extractor'.format(model_name))
 
     return model
 
@@ -181,7 +181,7 @@ def get_resnet_v1_roi_head(depth, roi_feature_size, num_classes, weight_decay=.0
                                                cache_subdir='models',
                                                file_hash=file_hash)
         roi_head_model.load_weights(weights_path, by_name=True)
-        tf.logging.info('successfully load keras pre-trained weights for {} roi head'.format(model_name))
+        tf.compat.v1.logging.info('successfully load keras pre-trained weights for {} roi head'.format(model_name))
     return roi_head_model
 
 

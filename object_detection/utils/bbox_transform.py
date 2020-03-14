@@ -20,8 +20,8 @@ def encode_bbox_with_mean_and_std(src_bbox, dst_bbox, target_means, target_stds)
 
     dx = (gt_center_x - center_x) / width
     dy = (gt_center_y - center_y) / height
-    dw = tf.log(gt_width / width)
-    dh = tf.log(gt_height / height)
+    dw = tf.math.log(gt_width / width)
+    dh = tf.math.log(gt_height / height)
 
     delta = tf.stack([dx, dy, dw, dh], axis=-1)
     delta = (delta - target_means) / target_stds

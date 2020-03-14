@@ -65,24 +65,24 @@ class AnchorTarget(tf.keras.Model):
 
         # 设置labels
         labels = tf.where(max_overlaps < self._neg_iou_threshold, tf.zeros_like(labels), labels)
-        labels = tf.scatter_update(tf.Variable(labels), gt_argmax_overlaps, 1)
+        labels = tf.compat.v1.scatter_update(tf.Variable(labels), gt_argmax_overlaps, 1)
         labels = tf.where(max_overlaps >= self._pos_iou_threshold, tf.ones_like(labels), labels)
 
         # 筛选正例反例
         fg_inds = tf.where(tf.equal(labels, 1))[:, 0]
         if tf.size(fg_inds) > self._max_pos_samples:
-            fg_inds = tf.random_shuffle(fg_inds)
+            fg_inds = tf.random.shuffle(fg_inds)
             disable_inds = fg_inds[self._max_pos_samples:]
             fg_inds = fg_inds[:self._max_pos_samples]
-            labels = tf.scatter_update(tf.Variable(labels), disable_inds, -1)
-        num_bg = self._total_num_samples - tf.reduce_sum(tf.to_int32(tf.equal(labels, 1)))
+            labels = tf.compat.v1.scatter_update(tf.Variable(labels), disable_inds, -1)
+        num_bg = self._total_num_samples - tf.reduce_sum(tf.compat.v1.to_int32(tf.equal(labels, 1)))
         bg_inds = tf.where(tf.equal(labels, 0))[:, 0]
         if tf.size(bg_inds) > num_bg:
-            bg_inds = tf.random_shuffle(bg_inds)
+            bg_inds = tf.compat.v1.random_shuffle(bg_inds)
             disable_inds = bg_inds[num_bg:]
             bg_inds = bg_inds[:num_bg]
-            labels = tf.scatter_update(tf.Variable(labels), disable_inds, -1)
-        tf.logging.debug('anchor target generate %d fgs and %d bgs.' % (tf.size(fg_inds), tf.size(bg_inds)))
+            labels = tf.compat.v1.scatter_update(tf.Variable(labels), disable_inds, -1)
+        tf.compat.v1.logging.debug('anchor target generate %d fgs and %d bgs.' % (tf.size(fg_inds), tf.size(bg_inds)))
 
         # 计算 bboxes targets，作为 rpn reg loss 的 ground truth
         bboxes_targets = encode_bbox_with_mean_and_std(anchors, tf.gather(gt_bboxes, argmax_overlaps),
@@ -91,13 +91,13 @@ class AnchorTarget(tf.keras.Model):
 
         # 只有正例才有 reg loss
         bbox_inside_weights = tf.zeros((anchors.shape[0], 4), dtype=tf.float32)
-        bbox_inside_weights = tf.scatter_update(tf.Variable(bbox_inside_weights),
+        bbox_inside_weights = tf.compat.v1.scatter_update(tf.Variable(bbox_inside_weights),
                                                 tf.where(tf.equal(labels, 1))[:, 0], 1)
 
         # 实质就是对 reg loss / num_rpn_samples
         bbox_outside_weights = tf.zeros((anchors.shape[0], 4), dtype=tf.float32)
-        num_examples = tf.reduce_sum(tf.to_float(labels >= 0))
-        bbox_outside_weights = tf.scatter_update(tf.Variable(bbox_outside_weights),
+        num_examples = tf.reduce_sum(tf.compat.v1.to_float(labels >= 0))
+        bbox_outside_weights = tf.compat.v1.scatter_update(tf.Variable(bbox_outside_weights),
                                                  tf.where(labels >= 0)[:, 0], 1.0 / num_examples)
 
         # 生成最终结果
@@ -118,8 +118,8 @@ def _unmap(data, count, inds, fill=0):
     """
     if len(data.shape) == 1:
         ret = tf.ones([count], dtype=tf.float32) * fill
-        ret = tf.scatter_update(tf.Variable(ret), inds, tf.to_float(data))
+        ret = tf.compat.v1.scatter_update(tf.Variable(ret), inds, tf.compat.v1.to_float(data))
     else:
         ret = tf.ones([count, ] + data.get_shape().as_list()[1:], dtype=tf.float32) * fill
-        ret = tf.scatter_update(tf.Variable(ret), inds, tf.to_float(data))
+        ret = tf.compat.v1.scatter_update(tf.Variable(ret), inds, tf.compat.v1.to_float(data))
     return ret

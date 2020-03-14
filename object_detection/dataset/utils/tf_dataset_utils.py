@@ -63,7 +63,7 @@ def _caffe_preprocessing(image, pixel_means):
     # AttributeError: 'Tensor' object has no attribute '_datatype_enum'
     # return tf.keras.applications.vgg16.preprocess_input(image)
 
-    image = tf.to_float(image)
+    image = tf.compat.v1.to_float(image)
     image = tf.reverse(image, axis=[-1])
     channels = tf.split(axis=-1, num_or_size_splits=3, value=image)
     for i in range(3):
@@ -106,21 +106,21 @@ def preprocessing_training_func(image, bboxes, height, width, labels,
         raise ValueError('unknown preprocessing type {}'.format(preprocessing_type))
     image = preprocessing_fn(image)
 
-    height = tf.to_float(height[0])
-    width = tf.to_float(width[0])
+    height = tf.compat.v1.to_float(height[0])
+    width = tf.compat.v1.to_float(width[0])
     scale1 = min_size / tf.minimum(height, width)
     scale2 = max_size / tf.maximum(height, width)
     scale = tf.minimum(scale1, scale2)
-    n_height = tf.to_int32(scale * height)
-    n_width = tf.to_int32(scale * width)
+    n_height = tf.compat.v1.to_int32(scale * height)
+    n_width = tf.compat.v1.to_int32(scale * width)
 
-    image = tf.image.resize_bilinear(image, (n_height, n_width))
+    image = tf.compat.v1.image.resize_bilinear(image, (n_height, n_width))
 
     channels = tf.split(axis=-1, num_or_size_splits=4, value=bboxes)
-    channels[0] = channels[0] * tf.to_float(n_height - 1)
-    channels[1] = channels[1] * tf.to_float(n_width - 1)
-    channels[2] = channels[2] * tf.to_float(n_height - 1)
-    channels[3] = channels[3] * tf.to_float(n_width - 1)
+    channels[0] = channels[0] * tf.compat.v1.to_float(n_height - 1)
+    channels[1] = channels[1] * tf.compat.v1.to_float(n_width - 1)
+    channels[2] = channels[2] * tf.compat.v1.to_float(n_height - 1)
+    channels[3] = channels[3] * tf.compat.v1.to_float(n_width - 1)
     bboxes = tf.concat(channels, axis=-1)
 
     return image, bboxes, labels
@@ -141,14 +141,14 @@ def preprocessing_eval_func(image, height, width,
         raise ValueError('unknown preprocessing type {}'.format(preprocessing_type))
     image = preprocessing_fn(image)
 
-    height = tf.to_float(height[0])
-    width = tf.to_float(width[0])
+    height = tf.compat.v1.to_float(height[0])
+    width = tf.compat.v1.to_float(width[0])
     scale1 = min_size / tf.minimum(height, width)
     scale2 = max_size / tf.maximum(height, width)
     scale = tf.minimum(scale1, scale2)
-    n_height = tf.to_int32(scale * height)
-    n_width = tf.to_int32(scale * width)
+    n_height = tf.compat.v1.to_int32(scale * height)
+    n_width = tf.compat.v1.to_int32(scale * width)
 
     image = tf.image.resize_bilinear(image, (n_height, n_width))
 
-    return image, scale, tf.to_int32(height), tf.to_int32(width)
+    return image, scale, tf.compat.v1.to_int32(height), tf.compat.v1.to_int32(width)

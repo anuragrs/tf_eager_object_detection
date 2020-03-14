@@ -81,7 +81,7 @@ class BaseFasterRcnn(tf.keras.Model):
         self._prediction_score_threshold = prediction_score_threshold
 
         self._anchor_generator = generate_by_anchor_base_tf
-        self._anchor_base = tf.to_float(generate_anchor_base(extractor_stride, ratios, scales))
+        self._anchor_base = tf.compat.v1.to_float(generate_anchor_base(extractor_stride, ratios, scales))
 
         # 创建Faster R-CNN的核心组件
         self._rpn_head = RpnHead(num_anchors=self._num_anchors, weight_decay=weight_decay)
@@ -130,18 +130,18 @@ class BaseFasterRcnn(tf.keras.Model):
             image = inputs
 
         image_shape = image.get_shape().as_list()[1:3]
-        tf.logging.debug('image shape is {}'.format(image_shape))
+        tf.compat.v1.logging.debug('image shape is {}'.format(image_shape))
 
         shared_features = self._extractor(image, training=training)
         shared_features_shape = shared_features.get_shape().as_list()[1:3]
-        tf.logging.debug('shared_features shape is {}'.format(shared_features_shape))
+        tf.compat.v1.logging.debug('shared_features shape is {}'.format(shared_features_shape))
 
         anchors = self._anchor_generator(self._anchor_base, self._extractor_stride,
-                                         tf.to_int32(tf.ceil(image_shape[0] / self._extractor_stride)),
-                                         tf.to_int32(tf.ceil(image_shape[1] / self._extractor_stride))
+                                         tf.compat.v1.to_int32(tf.math.ceil(image_shape[0] / self._extractor_stride)),
+                                         tf.compat.v1.to_int32(tf.math.ceil(image_shape[1] / self._extractor_stride))
                                          )
 
-        tf.logging.debug('anchor_generator generate {} anchors'.format(anchors.shape[0]))
+        tf.compat.v1.logging.debug('anchor_generator generate {} anchors'.format(anchors.shape[0]))
 
         rpn_score, rpn_bbox_txtytwth = self._rpn_head(shared_features, training=training)
 

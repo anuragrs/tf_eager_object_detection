@@ -254,7 +254,7 @@ def get_resnet_model(stack_fn, model_name='resnet', weight_decay=0.0001):
                                                cache_subdir='models',
                                                file_hash=file_hash)
         model.load_weights(weights_path, by_name=True)
-        tf.logging.info('successfully load keras pre-trained weights for {} extractor'.format(model_name))
+        tf.compat.v1.logging.info('successfully load keras pre-trained weights for {} extractor'.format(model_name))
 
     return model
 
@@ -384,19 +384,19 @@ class ResnetFpnNeck(tf.keras.Model):
 
         # build p4
         h, w = tf.shape(c4)[1], tf.shape(c4)[2]
-        upsample_p5 = tf.image.resize_bilinear(p5, (h, w), name='build_p4_resize')
+        upsample_p5 = tf.compat.v1.image.resize_bilinear(p5, (h, w), name='build_p4_resize')
         reduce_dims_c4 = self._build_p4_reduce_dims(c4)
         p4 = self._build_p4_fusion([upsample_p5 * 0.5, reduce_dims_c4 * 0.5])
 
         # build p3
         h, w = tf.shape(c3)[1], tf.shape(c3)[2]
-        upsample_p4 = tf.image.resize_bilinear(p4, (h, w), name='build_p3_resize')
+        upsample_p4 = tf.compat.v1.image.resize_bilinear(p4, (h, w), name='build_p3_resize')
         reduce_dims_c3 = self._build_p3_reduce_dims(c3)
         p3 = self._build_p3_fusion([upsample_p4 * 0.5, reduce_dims_c3 * 0.5])
 
         # build p2
         h, w = tf.shape(c2)[1], tf.shape(c2)[2]
-        upsample_p3 = tf.image.resize_bilinear(p3, (h, w), name='build_p2_resize')
+        upsample_p3 = tf.compat.v1.image.resize_bilinear(p3, (h, w), name='build_p2_resize')
         reduce_dims_c2 = self._build_p2_reduce_dims(c2)
         p2 = self._build_p2_fusion([upsample_p3 * 0.5, reduce_dims_c2 * 0.5])
 

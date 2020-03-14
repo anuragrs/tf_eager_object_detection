@@ -157,7 +157,7 @@ class BaseFPN(tf.keras.Model):
                 continue
             cur_roi_features = self._roi_pooling((cur_p, cur_rois, image_shape))
             all_roi_features.append(cur_roi_features)
-            tf.logging.debug('{} generate {} roi features'.format(level_name, cur_roi_features.shape[0]))
+            tf.compat.v1.logging.debug('{} generate {} roi features'.format(level_name, cur_roi_features.shape[0]))
         return tf.concat(all_roi_features, axis=0, name='all_roi_features')
 
     def _get_anchors(self, image_shape):
@@ -175,14 +175,14 @@ class BaseFPN(tf.keras.Model):
             cur_anchors = make_anchors(base_anchor_size=self._base_anchor_size_list[idx],
                                        anchor_scales=self._scales,
                                        anchor_ratios=self._ratios,
-                                       featuremap_height=tf.to_float(tf.ceil(image_shape[0] / extractor_stride)),
-                                       featuremap_width=tf.to_float(tf.ceil(image_shape[1] / extractor_stride)),
+                                       featuremap_height=tf.compat.v1.to_float(tf.math.ceil(image_shape[0] / extractor_stride)),
+                                       featuremap_width=tf.compat.v1.to_float(tf.math.ceil(image_shape[1] / extractor_stride)),
                                        stride=extractor_stride)
 
             all_anchors.append(cur_anchors)
-            tf.logging.debug('{} generate {} anchors'.format(level_name, cur_anchors.shape[0]))
+            tf.compat.v1.logging.debug('{} generate {} anchors'.format(level_name, cur_anchors.shape[0]))
         all_anchors = tf.concat(all_anchors, axis=0, name='all_anchors')
-        tf.logging.debug('all_anchors shape is {}'.format(all_anchors.get_shape().as_list()))
+        tf.compat.v1.logging.debug('all_anchors shape is {}'.format(all_anchors.get_shape().as_list()))
         return all_anchors
 
     def _get_fpn_head_results(self, p_list):
@@ -192,11 +192,11 @@ class BaseFPN(tf.keras.Model):
             cur_score, cur_bboxes_pred = self._rpn_head(p)
             all_fpn_scores.append(cur_score)
             all_fpn_bbox_pred.append(cur_bboxes_pred)
-            tf.logging.debug('fpn {} get rpn score shape {}'.format(level_name, cur_score.get_shape().as_list()))
+            tf.compat.v1.logging.debug('fpn {} get rpn score shape {}'.format(level_name, cur_score.get_shape().as_list()))
         all_fpn_bbox_pred = tf.concat(all_fpn_bbox_pred, axis=0, name='all_fpn_bbox_pred')
         all_fpn_scores = tf.concat(all_fpn_scores, axis=0, name='all_fpn_scores')
-        tf.logging.debug('all_fpn_bbox_pred shape is {}'.format(all_fpn_bbox_pred.get_shape().as_list()))
-        tf.logging.debug('all_fpn_scores shape is {}'.format(all_fpn_scores.get_shape().as_list()))
+        tf.compat.v1.logging.debug('all_fpn_bbox_pred shape is {}'.format(all_fpn_bbox_pred.get_shape().as_list()))
+        tf.compat.v1.logging.debug('all_fpn_scores shape is {}'.format(all_fpn_scores.get_shape().as_list()))
         return all_fpn_scores, all_fpn_bbox_pred
 
     def call(self, inputs, training=None, mask=None):
@@ -206,14 +206,14 @@ class BaseFPN(tf.keras.Model):
         else:
             image = inputs
         image_shape = image.get_shape().as_list()[1:3]
-        tf.logging.debug('image shape is {}'.format(image_shape))
+        tf.compat.v1.logging.debug('image shape is {}'.format(image_shape))
 
         # Step 2: get backbone results: p2, p3, p4, p5, p6
         c_list = self._extractor(image, training=training)
         p_list = self._neck(c_list, training=training)
-        tf.logging.debug('shared_features length is {}'.format(len(p_list)))
+        tf.compat.v1.logging.debug('shared_features length is {}'.format(len(p_list)))
         for idx, p in enumerate(p_list):
-            tf.logging.debug('p{} shape is {}'.format(idx + 2, p.get_shape().as_list()))
+            tf.compat.v1.logging.debug('p{} shape is {}'.format(idx + 2, p.get_shape().as_list()))
 
         # Step 3: get rpn head results and anchors
         all_fpn_scores, all_fpn_bbox_pred = self._get_fpn_head_results(p_list)

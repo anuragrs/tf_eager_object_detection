@@ -65,10 +65,10 @@ class ProposalTarget(tf.keras.Model):
 
         # 筛选 前景/背景
         if tf.size(fg_inds) > self._max_pos_samples:
-            fg_inds = tf.random_shuffle(fg_inds)[:self._max_pos_samples]
+            fg_inds = tf.random.shuffle(fg_inds)[:self._max_pos_samples]
         if tf.size(bg_inds) > self._total_num_samples - tf.size(fg_inds):
             # 如果bg sample的数量多于要求值，则随机筛选
-            bg_inds = tf.random_shuffle(bg_inds)[:(self._total_num_samples - tf.size(fg_inds))]
+            bg_inds = tf.random.shuffle(bg_inds)[:(self._total_num_samples - tf.size(fg_inds))]
         elif tf.size(bg_inds).numpy() == (self._total_num_samples - tf.size(fg_inds)).numpy():
             pass
         else:
@@ -76,13 +76,13 @@ class ProposalTarget(tf.keras.Model):
             target_size = (self._total_num_samples - tf.size(fg_inds)).numpy()
             bg_inds = np.random.choice(bg_inds.numpy(), size=int(target_size), replace=True)
 
-        tf.logging.debug('proposal target generate %d fgs and %d bgs.' % (tf.size(fg_inds), tf.size(bg_inds)))
+        tf.compat.v1.logging.debug('proposal target generate %d fgs and %d bgs.' % (tf.size(fg_inds), tf.size(bg_inds)))
 
         keep_inds = tf.concat([fg_inds, bg_inds], axis=0)
         final_rois = tf.gather(rois, keep_inds)  # rois[keep_inds]
         final_labels = tf.gather(labels, keep_inds)  # labels[keep_inds]
         # labels[fg_inds_size:] = 0
-        final_labels = tf.scatter_update(tf.Variable(final_labels),
+        final_labels = tf.compat.v1.scatter_update(tf.Variable(final_labels),
                                          tf.range(tf.size(fg_inds), tf.size(keep_inds), dtype=tf.int32), 0)
 
         # inside weights 只有正例才会设置，其他均为0

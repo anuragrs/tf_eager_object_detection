@@ -23,20 +23,20 @@ class RoiPoolingCropAndResize2(tf.keras.Model):
         """
         # [1, height, width, channels]  [num_rois, 4]
         shared_layers, rois, image_shape = inputs
-        h, w = tf.to_float(image_shape[0]), tf.to_float(image_shape[1])
+        h, w = tf.compat.v1.to_float(image_shape[0]), tf.compat.v1.to_float(image_shape[1])
 
         batch_ids = tf.zeros([tf.shape(rois)[0]], dtype=tf.int32)
         roi_channels = tf.split(rois, 4, axis=1)
         bboxes = tf.concat([
-            roi_channels[1] / tf.to_float(h),
-            roi_channels[0] / tf.to_float(w),
-            roi_channels[3] / tf.to_float(h),
-            roi_channels[2] / tf.to_float(w),
+            roi_channels[1] / tf.compat.v1.to_float(h),
+            roi_channels[0] / tf.compat.v1.to_float(w),
+            roi_channels[3] / tf.compat.v1.to_float(h),
+            roi_channels[2] / tf.compat.v1.to_float(w),
         ], axis=1)
         pre_pool_size = self._pool_size * 2
         crops = tf.image.crop_and_resize(shared_layers,
                                          tf.stop_gradient(bboxes),
-                                         box_ind=tf.to_int32(batch_ids),
+                                         box_ind=tf.compat.v1.to_int32(batch_ids),
                                          crop_size=[pre_pool_size, pre_pool_size],
                                          name="crops")
         return self._max_pool(crops)
@@ -61,16 +61,16 @@ class RoiPoolingCropAndResize(tf.keras.Model):
         """
         # [1, height, width, channels]  [num_rois, 4]
         shared_layers, rois, extractor_stride = inputs
-        rois = rois / extractor_stride
+        rois = rois / tf.cast(extractor_stride, tf.float32)
 
         batch_ids = tf.zeros([tf.shape(rois)[0]], dtype=tf.int32)
         h, w = shared_layers.get_shape().as_list()[1:3]
         roi_channels = tf.split(rois, 4, axis=1)
         bboxes = tf.concat([
-            roi_channels[1] / tf.to_float(h - 1),
-            roi_channels[0] / tf.to_float(w - 1),
-            roi_channels[3] / tf.to_float(h - 1),
-            roi_channels[2] / tf.to_float(w - 1),
+            roi_channels[1] / tf.compat.v1.to_float(h - 1),
+            roi_channels[0] / tf.compat.v1.to_float(w - 1),
+            roi_channels[3] / tf.compat.v1.to_float(h - 1),
+            roi_channels[2] / tf.compat.v1.to_float(w - 1),
         ], axis=1)
         if self._max_pooling_flag:
             pre_pool_size = self._pool_size * 2
@@ -78,14 +78,14 @@ class RoiPoolingCropAndResize(tf.keras.Model):
             # 重大bug…… shared_layers 还是需要参与反向传播的……，bboxes不参加
             crops = tf.image.crop_and_resize(shared_layers,
                                              tf.stop_gradient(bboxes),
-                                             box_ind=tf.to_int32(batch_ids),
+                                             box_indices=tf.compat.v1.to_int32(batch_ids),
                                              crop_size=[pre_pool_size, pre_pool_size],
                                              name="crops")
             return self._max_pool(crops)
         else:
             return tf.image.crop_and_resize(shared_layers,
                                             tf.stop_gradient(bboxes),
-                                            box_ind=tf.to_int32(batch_ids),
+                                            box_indices=tf.compat.v1.to_int32(batch_ids),
                                             crop_size=[self._pool_size, self._pool_size],
                                             name="crops")
 
@@ -163,7 +163,7 @@ class RoiPoolingRoiAlign(tf.keras.Model):
 
     def call(self, inputs, training=None, mask=None):
         """
-        输入 backbone 的结果和 rpn proposals 的结果(即 RegionProosal 的输出)
+        输入 backbone 的结果和 rpn proposals 的结果(即 RegionProposal 的输出)
         输出 roi pooloing 的结果，即在特征图上，对每个rpn proposal获取一个固定尺寸的特征图
         :param inputs:
         :param training:
@@ -172,6 +172,6 @@ class RoiPoolingRoiAlign(tf.keras.Model):
         """
         # [1, height, width, channels]  [num_rois, 4]
         shared_layers, rois, extractor_stride = inputs
-        rois = rois / extractor_stride
+        rois = tf.truediv(rois, extractor_stride)
         net = roi_align(shared_layers, tf.stop_gradient(rois), self._pool_size)
         return net

@@ -32,7 +32,7 @@ def _get_global_dataset(mode, year, root_dir):
 
 
 class CocoDataset:
-    def __init__(self, root_dir='/ssd/zhangyiyang/COCO2017', sub_dir='train', year="2017",
+    def __init__(self, root_dir='/Users/mzanur/data/COCO', sub_dir='train', year="2017",
                  min_edge=32, ):
         if sub_dir not in ['train', 'val', 'minival']:
             raise ValueError('unknown sub dir {}'.format(sub_dir))
@@ -174,7 +174,7 @@ def get_training_dataset(root_dir='D:\\data\\COCO2017',
         return file_path, gt_bboxes, image_height, image_width, gt_labels
 
     tf_dataset = tf.data.Dataset.from_tensor_slices(coco_dataset.img_ids).map(
-        lambda img_id: tuple([*tf.py_func(_parse_coco_data_py, [img_id],
+        lambda img_id: tuple([*tf.compat.v1.py_func(_parse_coco_data_py, [img_id],
                                           [tf.string, tf.float32, tf.int64, tf.int64, tf.int64])])
     )
     tf_dataset = tf_dataset.map(
@@ -188,7 +188,7 @@ def get_training_dataset(root_dir='D:\\data\\COCO2017',
         image_argument_partial = partial(image_argument_with_imgaug, iaa_sequence=iaa_sequence)
         tf_dataset = tf_dataset.map(
             lambda image, bboxes, image_height, image_width, labels: tuple([
-                *tf.py_func(image_argument_partial, [image, bboxes], [image.dtype, bboxes.dtype]),
+                *tf.compat.v1.py_func(image_argument_partial, [image, bboxes], [image.dtype, bboxes.dtype]),
                 image_height, image_width, labels]),
             num_parallel_calls=5
         )
@@ -207,7 +207,7 @@ def get_training_dataset(root_dir='D:\\data\\COCO2017',
     return tf_dataset.repeat(repeat)
 
 
-def get_eval_dataset(root_dir='D:\\data\\COCO2017',
+def get_eval_dataset(root_dir='/Users/mzanur/data/COCO',
                      mode='train', year='2017',
                      min_size=600, max_size=1000,
                      preprocessing_type='caffe', caffe_pixel_means=None,
