@@ -32,7 +32,7 @@ def _get_global_dataset(mode, year, root_dir):
 
 
 class CocoDataset:
-    def __init__(self, root_dir='/Users/mzanur/data/COCO', sub_dir='train', year="2017",
+    def __init__(self, root_dir='/data/COCO', sub_dir='train', year="2017",
                  min_edge=32, ):
         if sub_dir not in ['train', 'val', 'minival']:
             raise ValueError('unknown sub dir {}'.format(sub_dir))
@@ -207,7 +207,7 @@ def get_training_dataset(root_dir='D:\\data\\COCO2017',
     return tf_dataset.repeat(repeat)
 
 
-def get_eval_dataset(root_dir='/Users/mzanur/data/COCO',
+def get_eval_dataset(root_dir='/data/COCO',
                      mode='train', year='2017',
                      min_size=600, max_size=1000,
                      preprocessing_type='caffe', caffe_pixel_means=None,

@@ -84,7 +84,7 @@ def get_default_coco_fpn_config():
         'top_down_dims': 256,
 
         # preprocessing configs
-        'image_max_size': 1024,
+        'image_max_size': 1333,
         'image_min_size': 800,
         'bgr_pixel_means': [103.939, 116.779, 123.68],
 
@@ -104,7 +104,7 @@ def get_default_coco_fpn_config():
 
         # training configs
         'learning_rate_multi_decay_steps': [120000*8, 120000*11],
-        'learning_rate_multi_lrs': [1e-3, 1e-4],
+        'learning_rate_multi_lrs': [1e-3, 1e-4, 1e-5],
         'learning_rate_bias_double': True,
         'optimizer_momentum': 0.9,
         'epochs': 12,
@@ -147,14 +147,14 @@ def get_default_coco_fpn_config():
 
         # roi pooling
         'roi_pooling_size': 7,
-        'roi_pooling_max_pooling_flag': True,
+        'roi_pooling_max_pooling_flag': False,
 
         # proposal target
         'roi_sigma': 1.0,
         'roi_pos_iou_threshold': 0.5,
-        'roi_neg_iou_threshold': 0.,
-        'roi_total_sample_number': 128,
-        'roi_pos_sample_max_number': 32,
+        'roi_neg_iou_threshold': 0.0,
+        'roi_total_sample_number': 512,
+        'roi_pos_sample_max_number': 256,
 
     }
 

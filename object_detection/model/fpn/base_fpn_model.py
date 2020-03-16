@@ -306,7 +306,7 @@ class BaseFPN(tf.keras.Model):
             xmin, ymin, xmax, ymax = tf.unstack(all_rois, axis=1)
             h = tf.maximum(0., ymax - ymin)
             w = tf.maximum(0., xmax - xmin)
-            levels = tf.floor(4. + tf.log(tf.sqrt(w * h + 1e-8) / 224.0) / tf.log(2.))
+            levels = tf.floor(4. + tf.math.log(tf.sqrt(w * h + 1e-8) / 224.0) / tf.math.log(2.))
 
             # 设置level上下限
             levels = tf.maximum(levels, tf.ones_like(levels) * self._min_level)

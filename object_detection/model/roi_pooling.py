@@ -36,7 +36,7 @@ class RoiPoolingCropAndResize2(tf.keras.Model):
         pre_pool_size = self._pool_size * 2
         crops = tf.image.crop_and_resize(shared_layers,
                                          tf.stop_gradient(bboxes),
-                                         box_ind=tf.compat.v1.to_int32(batch_ids),
+                                         box_indices=tf.compat.v1.to_int32(batch_ids),
                                          crop_size=[pre_pool_size, pre_pool_size],
                                          name="crops")
         return self._max_pool(crops)

@@ -127,7 +127,7 @@ def train_one_epoch(dataset, base_model, optimizer,
                                               preprocessing_type=preprocessing_type,
                                               caffe_pixel_means=CONFIG['bgr_pixel_means'],
                                               enable_matplotlib=False)
-                    tf.summary.image("gt_image", tf.expand_dims(gt_image, axis=0))
+                    tf.summary.image("gt_image", tf.expand_dims(gt_image, axis=0), step=curr_step)
 
                     # show pred
                     pred_bboxes = tf.gather(pred_bboxes, selected_idx)
@@ -142,7 +142,7 @@ def train_one_epoch(dataset, base_model, optimizer,
                                                 preprocessing_type=preprocessing_type,
                                                 caffe_pixel_means=CONFIG['bgr_pixel_means'],
                                                 enable_matplotlib=False)
-                    tf.summary.image("pred_image", tf.expand_dims(pred_image, axis=0))
+                    tf.summary.image("pred_image", tf.expand_dims(pred_image, axis=0), step=curr_step)
 
         # logging
         if idx % logging_every_n_steps == 0:
@@ -217,7 +217,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Train a model')
     parser.add_argument('--gpu_id', default="0", type=str, help='used in sys variable CUDA_VISIBLE_DEVICES')
 
-    parser.add_argument('--model_type', type=str, default='faster_rcnn',
+    parser.add_argument('--model_type', type=str, default='fpn',
                         help='one of [faster_rcnn, fpn]')
     parser.add_argument('--backbone', type=str, default='resnet50',
                         help='one of [vgg16, resnet50, resnet101, resnet152]')
@@ -245,9 +245,9 @@ def parse_args():
     # parser.add_argument('--data_root_path', default="/ssd/zhangyiyang/COCO2017", type=str)
     parser.add_argument('--data_root_path', type=str,
                         help='path to tfrecord files if pascal, path to coco root if coco',
-                        default="/Users/mzanur/data/COCO")
+                        default="/data/COCO")
     parser.add_argument('--logs_dir', type=str, help='path to save ckpt files and tensorboard summaries.',
-                        default="/Users/mzanur/workspace/tf_eager_object_detection/logs")
+                        default="/tf_eager_object_detection/logs")
 
     # # parser.add_argument('--data_root_path', default="D:\\data\\COCO2017", type=str)
     # parser.add_argument('--data_root_path', default="D:\\data\\VOCdevkit\\tf_eager_records\\", type=str)
